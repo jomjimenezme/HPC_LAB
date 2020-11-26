@@ -14,11 +14,11 @@ int main(int argc, char** argv){
 
 //Integral Variables
   int n_trapez, n;
-  double x, h,loc_sum, integral;
-  double aux_sum, TN, T2N, S2N=10;
+  double x, h,loc_sum,integral;
+  double aux_sum, sum, TN, T2N, S2N=10;
   double a,b; 
   double local_a, local_b;
-  double eps=1.0e-11;
+  double eps=1.0e-15;
   
   MPI_Status  status;    /* return status for  receive  */                               
   MPI_Init(&argc, &argv);
@@ -28,14 +28,18 @@ int main(int argc, char** argv){
   Get_data(&a,&b,&n, my_rank, p);  
   n=2*p; 
   
+  h=(b-a)/n;
+  n_trapez=n/p;
   local_a=a+(my_rank)*n_trapez*h;
   local_b=a+(my_rank+1)*n_trapez*h;
   loc_sum= (f(local_a)+f(local_b))/2.0;
-  aux_sum=loc_sum+f(local_a+h);
-  TN_loc=(aux_sum)*h; 
-  MPI_Reduce(&loc_sum, &integral, 1,  MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-  TN=integral*h;
-  while(fabs(S2N-M_PI)>0.00001){
+  loc_sum=loc_sum+f(local_a+h);
+  MPI_Reduce(&loc_sum, &sum, 1,  MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+  MPI_Bcast(&sum, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+  integral=sum*h;
+  TN=integral;
+  S2N=TN;
+  while(fabs(4*S2N-M_PI)>eps){
   loc_sum=0;
   n=n*2; 
   h=(b-a)/n;
@@ -43,20 +47,18 @@ int main(int argc, char** argv){
   x=local_a;
  
   for (i=1; i< n_trapez; i+=2){
-	x=x+h;
+	x=local_a+i*h;
 	loc_sum+=f(x);
   }
- // loc_sum = loc_sum*h;
-  MPI_Reduce(&loc_sum, &integral, 1,  MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-  T2N=(aux_sum+integral)*h; 
+  MPI_Reduce(&loc_sum, &aux_sum, 1,  MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+  MPI_Bcast(&aux_sum,1,MPI_DOUBLE, 0, MPI_COMM_WORLD);
+  T2N=(aux_sum+sum)*h; 
   S2N=(4.0/3.0)*T2N-(1.0/3.0)*TN;
-  MPI_Broadcast(&S2N,1,MPI_DOUBLE, 0, MPI_COMM_WORLD);
- 
+  sum= sum+aux_sum;
    if(my_rank==0){	
- printf("%d\t %.16lf\n", n, fabs(S2N*4-M_PI));
+ printf("%d\t %.20e\n", n, fabs(S2N*4-M_PI));
  }
  TN=T2N;
- aux_sum=integral;
 
 }
  //}

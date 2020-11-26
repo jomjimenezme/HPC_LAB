@@ -2,7 +2,7 @@ clc; clear
 p_av=[];
 n_av=[];
 t_av=[];
-ran=64;
+ran=16;
 
 for name=["whole","localcomp", "reduce", "getdata"]
 for i=2:64

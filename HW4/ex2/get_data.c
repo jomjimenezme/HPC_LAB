@@ -12,7 +12,6 @@ void Get_data( double* a_ptr, double* b_ptr, int* n_ptr, int my_rank, int p){
 	MPI_Status status;
 
 	if(my_rank ==0){
-		printf("Enter a, b, and n\n");
 		scanf("%lf %lf %d", a_ptr, b_ptr, n_ptr);
 	}
 
