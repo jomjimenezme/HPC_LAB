@@ -18,7 +18,7 @@ int main(int argc, char** argv){
   double a,b; 
   double local_a, local_b;
   double start, startl, finishl;
-  double N=1000; //Averaging over N iterations. 
+  double N=100; //Averaging over N iterations. 
   
 
   MPI_Status  status;    /* return status for  receive  */                               

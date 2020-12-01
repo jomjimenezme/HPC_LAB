@@ -18,7 +18,7 @@ int main(int argc, char** argv){
   double a,b; 
   double local_a, local_b;
   double start, finish;
-  double N=100;
+  double N=1000;
  
   MPI_Status  status;    /* return status for  receive  */                           MPI_Init(&argc, &argv);
   MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);

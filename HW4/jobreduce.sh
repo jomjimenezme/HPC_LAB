@@ -2,6 +2,7 @@
 #
 #SBATCH --nodes=8
 #SBATCH --exclusive
+#SBATCH --exclude=node05
 #SBATCH --partition=NODE2008
 
 ##mpirun ./a.out
