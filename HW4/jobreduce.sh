@@ -7,5 +7,5 @@
 ##mpirun ./a.out
 for i in {2..64}
 do
-   mpirun --mca btl_openib_allow_ib true -np $i ./whole  >whole$i.out
+   mpirun --mca btl_openib_allow_ib true -np $i ./reduce  >reduce$i.out
 done
