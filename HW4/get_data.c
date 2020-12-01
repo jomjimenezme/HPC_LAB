@@ -12,8 +12,14 @@ void Get_data( double* a_ptr, double* b_ptr, int* n_ptr, int my_rank, int p){
 	MPI_Status status;
 
 	if(my_rank ==0){
-		printf("Enter a, b, and n\n");
-		scanf("%lf %lf %d", a_ptr, b_ptr, n_ptr);
+
+    	FILE *input;
+        input = fopen("input.d", "r");
+        fscanf(input, "%lf", a_ptr);
+        fscanf(input, "%lf", b_ptr);	
+        fscanf(input, "%d", n_ptr);	
+        fclose(input);
+
 	}
 
 	MPI_Bcast(a_ptr, 1,MPI_DOUBLE, 0	, MPI_COMM_WORLD);
