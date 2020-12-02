@@ -38,8 +38,8 @@ int main(int argc, char** argv){
   MPI_Bcast(&sum, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
   integral=sum*h;
   TN=integral;
-  S2N=TN;
-  while(fabs(4*S2N-M_PI)>eps){
+  S2N=TN+3;
+  while(fabs((4*S2N-M_PI)/M_PI)>eps){
   loc_sum=0;
   n=n*2; 
   h=(b-a)/n;
@@ -56,10 +56,10 @@ int main(int argc, char** argv){
   S2N=(4.0/3.0)*T2N-(1.0/3.0)*TN;
   sum= sum+aux_sum;
    if(my_rank==0){	
- printf("%d\t %.20e\n", n, fabs(S2N*4-M_PI));
+ printf("%d\t %.20e %.20e\n", n,  fabs((4*T2N-M_PI)/M_PI) ,fabs((4*S2N-M_PI)/M_PI));
  }
  TN=T2N;
-
+ MPI_Bcast(&TN, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 }
  //}
   MPI_Finalize();

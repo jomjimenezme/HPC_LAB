@@ -1,6 +1,7 @@
 #!/bin/bash
 #
 #SBATCH --nodes=1
+#SBATCH --ntasks=2
 #SBATCH --exclusive
 #SBATCH --partition=NODE2008
 
