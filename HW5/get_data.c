@@ -44,7 +44,7 @@ void Read_matrix(double local_A[], int local_m, int local_n, int my_rank, int p)
   //int n=local_n*p;
   //int m= local_m*p;
   int dest=0;
-  MPI_Request request, request2;
+  //MPI_Request request, request2;
   MPI_Status status;
   //Dynamically allocation of vector
   //temp = malloc( local_n*local_m * sizeof(double) ) ;

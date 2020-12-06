@@ -13,7 +13,7 @@ int main(int argc, char** argv){
   MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
   Read_size(&m, &n, my_rank, p);
-  local_m=m/p;
+   local_m=m/p;
   local_n=n;
   
   local_x= malloc( local_n *sizeof( double ) );
