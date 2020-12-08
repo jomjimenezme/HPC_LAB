@@ -18,4 +18,6 @@ double Parallel_dot( double  local_x[],  double  local_y[], int  n_bar) {
     local_dot = Serial_dot(local_x, local_y, n_bar);
     MPI_Reduce(&local_dot, &dot, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
     return dot;
-} 
+}
+
+
