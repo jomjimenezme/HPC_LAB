@@ -7,20 +7,16 @@
 int main(int argc, char** argv){
     
   int my_rank, p, i,j,k, c;    
-  int local_n, local_m, m,n, dot;
+  int local_n, local_m, m,n;
   double norm;
+  int shift=0;
   double* local_C;
   double* local_A;
   double* local_B; 
-  double start, finish;   
-  int N=1;
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &p);
   MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
   MPI_Status  status; 
-for (j=0; j<N; j++){ //So that we measure the time several times
- MPI_Barrier(MPI_COMM_WORLD);
-  start = MPI_Wtime();
 
   
 //-----------------Allocation of local matrixes-------------------
@@ -31,7 +27,6 @@ for (j=0; j<N; j++){ //So that we measure the time several times
   local_A= malloc( local_m*local_n *sizeof( double ) );
   local_B= malloc( local_m*local_n *sizeof( double ) );
   local_C= malloc( local_m*local_n *sizeof( double ) );
-  //printf("size %d x %d \n", m,n);
 
   Read_matrix(local_A, m, n, my_rank, p, "matrix.d");
   Read_matrix(local_B, m, n, my_rank, p, "matrix.d");
@@ -39,61 +34,39 @@ for (j=0; j<N; j++){ //So that we measure the time several times
  
 //------------------Computation of C----------------------
   
-//  printf("%d, %lf, %lf, c[0]= %lf  \n", my_rank, local_B[0], local_B[5], local_C[0]);
-  for(c=0; c<=local_m; c++){//stop in local m, do another shift at the end
 
- // printf("I am %d and I'll send to %d, and receive from: %d \n", my_rank, (my_rank+1)%p, ( (my_rank-1)%p +p )%(p)  );
+  for(c=0; c<=local_m; c++){ //Loop for circular shift.
+    shift= local_m * (c +  my_rank)%p  ; //start position for A after every stage of rotation
 
-  for (i=0; i<local_m; i++){
-    for (j=0; j<local_m; j++){
+    for (i=0; i<local_m; i++){ // The three loops of Matrix-Matrix product
+      for (j=0; j<local_n; j++){
 	for(k=0; k< local_m; k++){
-          local_C[i*local_n +j ] += local_A[ c*local_m+  i*local_n+k  ]  *  local_B[ k * local_n +j  ];
-
-          if(my_rank==0){  printf("%d, %lf, %lf, c[%d,%d]= %lf  \n", my_rank, local_A[ c*local_m + i*local_n+k  ], local_B[ k* local_n +j  ], i  , j  ,local_C[  i*local_n+j ] ); };
+          local_C[  i*local_n +j ] += local_A[ ( shift ) +  i*local_n+k  ]  *  local_B[ k * local_n +j  ];
 	}
+      }
     }
+    MPI_Sendrecv_replace(local_B, n*local_m, MPI_DOUBLE,   ( (my_rank-1)%p +p )%p  , 0, (my_rank+1)%p , 0, MPI_COMM_WORLD, &status );
   }
-
-/*for (i=0; i<local_m; i++){
-    for (j=0; j<local_m; j++){
-      local_C[ ] += local_A[ i*local_n+j  ]  *  local_B[ j * local_n +i  ];
-      if(my_rank==0){  printf("%d, %lf, %lf, c[%d,%d]= %lf  \n", my_rank, local_A[ i*local_n+j  ], local_B[ j* local_n +i  ], c  , c  ,local_C[  c ] ); };
-    }
-  }
-*/
-   MPI_Sendrecv_replace(local_B, n*local_m, MPI_DOUBLE, (my_rank+1)%p, 0, ( (my_rank-1)%p +p )%p , 0, MPI_COMM_WORLD, &status );
-
-  //printf("%d, %lf, %lf, c[0]= %lf  \n", my_rank, local_B[0], local_B[5], local_C[0]);
-}
  
 
-/*  
-  x= malloc( n *sizeof( double ) );
-  local_y= malloc(local_m*sizeof(double));
-  Read_vector(x, n, my_rank, p);
 
-  for(i=0; i<local_m; i++){
-    local_y[i]= Serial_dot(&local_A[i*n], x , n);
+//------------------Silly printing------------------------------
+  for (c=0; c<p; c++){
+    if(my_rank==c){
+      for(i=0; i<local_m; i++){
+        for(j=0; j<local_n; j++){
+  	  printf(" %lf ", local_C[i*local_n+j]);
+        }
+  	  printf("\n");
+      }
+    }
   }
 
-
- MPI_Barrier(MPI_COMM_WORLD);
- finish = MPI_Wtime();
-
-
-//------------------Comparing and printing------------------------------
-    Read_norm(&norm, my_rank,p);
-  dot=Parallel_dot(local_y, local_y, local_m);
-  if(my_rank==0){
-    printf("%d %lf %.16lf \n", p, finish-start,fabs(sqrt(dot)-norm));
-  }
-
-*/
 
   free(local_A);
   free(local_B);
   free(local_C);
-}
   MPI_Finalize();
-      }
+      
+}
   
