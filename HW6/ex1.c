@@ -6,7 +6,7 @@
 #include "algebra.c"
 int main(int argc, char** argv){
     
-  int my_rank, p, i,j, c;    
+  int my_rank, p, i,j,k, c;    
   int local_n, local_m, m,n, dot;
   double norm;
   double* local_C;
@@ -40,14 +40,17 @@ for (j=0; j<N; j++){ //So that we measure the time several times
 //------------------Computation of C----------------------
   
 //  printf("%d, %lf, %lf, c[0]= %lf  \n", my_rank, local_B[0], local_B[5], local_C[0]);
-  //for(c=0; c<local_m; c++){
+  for(c=0; c<=local_m; c++){//stop in local m, do another shift at the end
 
  // printf("I am %d and I'll send to %d, and receive from: %d \n", my_rank, (my_rank+1)%p, ( (my_rank-1)%p +p )%(p)  );
 
   for (i=0; i<local_m; i++){
     for (j=0; j<local_m; j++){
-      local_C[ ] += local_A[ i*local_n+j  ]  *  local_B[ j * local_n +i  ];
-      if(my_rank==0){  printf("%d, %lf, %lf, c[%d,%d]= %lf  \n", my_rank, local_A[ i*local_n+j  ], local_B[ j* local_n +i  ], c  , c  ,local_C[  c ] ); };
+	for(k=0; k< local_m; k++){
+          local_C[i*local_n +j ] += local_A[ c*local_m+  i*local_n+k  ]  *  local_B[ k * local_n +j  ];
+
+          if(my_rank==0){  printf("%d, %lf, %lf, c[%d,%d]= %lf  \n", my_rank, local_A[ c*local_m + i*local_n+k  ], local_B[ k* local_n +j  ], i  , j  ,local_C[  i*local_n+j ] ); };
+	}
     }
   }
 
@@ -58,10 +61,10 @@ for (j=0; j<N; j++){ //So that we measure the time several times
     }
   }
 */
- //  MPI_Sendrecv_replace(local_B, n*local_m, MPI_DOUBLE, (my_rank+1)%p, 0, ( (my_rank-1)%p +p )%p , 0, MPI_COMM_WORLD, &status );
+   MPI_Sendrecv_replace(local_B, n*local_m, MPI_DOUBLE, (my_rank+1)%p, 0, ( (my_rank-1)%p +p )%p , 0, MPI_COMM_WORLD, &status );
 
   //printf("%d, %lf, %lf, c[0]= %lf  \n", my_rank, local_B[0], local_B[5], local_C[0]);
-//}
+}
  
 
 /*  
