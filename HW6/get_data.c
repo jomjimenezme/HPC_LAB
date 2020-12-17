@@ -13,10 +13,10 @@ void Read_norm(double* norm_ptr , int my_rank, int p){
   MPI_Bcast(norm_ptr,1,MPI_DOUBLE, 0, MPI_COMM_WORLD);
   }
 
-void Read_size(int* m_ptr, int* n_ptr, int my_rank, int p){
+void Read_size(int* m_ptr, int* n_ptr, int my_rank, int p, char* name){
   if(my_rank==0){
     FILE *size;
-    size =fopen("matrix.d","r");
+    size =fopen(name, "r");
     fscanf(size, "%d", m_ptr);
     fscanf(size, "%d", n_ptr);
     fclose(size);

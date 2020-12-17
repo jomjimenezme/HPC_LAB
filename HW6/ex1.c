@@ -7,7 +7,9 @@
 int main(int argc, char** argv){
     
   int my_rank, p, i,j,k, c;    
-  int local_n, local_m, m,n;
+  int local_nA, local_mA, mA,nA;
+  int local_nB, local_mB, mB,nB;
+  int local_nC, local_mC, mC,nC;
   double norm;
   int shift=0;
   double* local_C;
@@ -20,42 +22,51 @@ int main(int argc, char** argv){
 
   
 //-----------------Allocation of local matrixes-------------------
-  Read_size(&m, &n, my_rank, p);
-  local_m=m/p;
-  local_n=n;
-
-  local_A= malloc( local_m*local_n *sizeof( double ) );
-  local_B= malloc( local_m*local_n *sizeof( double ) );
-  local_C= malloc( local_m*local_n *sizeof( double ) );
-
-  Read_matrix(local_A, m, n, my_rank, p, "matrix.d");
-  Read_matrix(local_B, m, n, my_rank, p, "matrix.d");
   
- 
+  Read_size(&mA, &nA, my_rank, p, "A.txt");
+  Read_size(&mB, &nB, my_rank, p, "B.txt");
+  local_mA=mA/p;
+  local_nA=nA;
+  local_mB=mB/p;
+  local_nB=nB;
+  
+  local_mC= local_mA;
+  local_nC= local_nB;
+
+  local_A= malloc( local_mA*local_nA *sizeof( double ) );
+  local_B= malloc( local_mB*local_nB *sizeof( double ) );
+  local_C= malloc( local_mC*local_nC *sizeof( double ) );
+
+  Read_matrix(local_A, mA, nA, my_rank, p, "A.txt");
+  Read_matrix(local_B, mB, nB, my_rank, p, "B.txt");
+  
+  memset( local_C, 0, local_mC * local_nC * sizeof(double) ); 
 //------------------Computation of C----------------------
-  
 
-  for(c=0; c<=local_m; c++){ //Loop for circular shift.
-    shift= local_m * (c +  my_rank)%p  ; //start position for A after every stage of rotation
-
-    for (i=0; i<local_m; i++){ // The three loops of Matrix-Matrix product
-      for (j=0; j<local_n; j++){
-	for(k=0; k< local_m; k++){
-          local_C[  i*local_n +j ] += local_A[ ( shift ) +  i*local_n+k  ]  *  local_B[ k * local_n +j  ];
+  for(c=0; c<=local_mB; c++){ //Loop for circular shift of B.
+    shift= (c +  my_rank)%p  ; //start position for A after every stage of rotation
+//printf("c===%d,   rank=%d, shift= %d,  localmB=%d   \n", c, my_rank, shift, local_mB );
+    for (i=0; i<local_mC; i++){ // The three loops of Matrix-Matrix product
+      for (j=0; j<local_nC; j++){
+	for(k=0; k< local_mB; k++){
+          local_C[  i*local_nC +j ] += local_A[ ( shift )*local_mB +  i*local_nA+k  ]  *  local_B[ k * local_nB +j  ];
+//	  if(my_rank==1 )printf("%d %lf %lf C[%d,%d]= %lf\n",my_rank, local_A[(shift)*local_mB + i*local_nA+k ]    , local_B[ k* local_nB +j  ], i, j, local_C[ i*local_nC+j  ]);
 	}
       }
     }
-    MPI_Sendrecv_replace(local_B, n*local_m, MPI_DOUBLE,   ( (my_rank-1)%p +p )%p  , 0, (my_rank+1)%p , 0, MPI_COMM_WORLD, &status );
+    MPI_Sendrecv_replace(local_B, nB*local_mB, MPI_DOUBLE,   ( (my_rank-1)%p +p )%p  , 0, (my_rank+1)%p , 0, MPI_COMM_WORLD, &status );
   }
  
 
 
 //------------------Silly printing------------------------------
-  for (c=0; c<p; c++){
+ //if(my_rank==0){printf("%d %d \n", n, n); } 
+ 
+ for (c=0; c<p; c++){
     if(my_rank==c){
-      for(i=0; i<local_m; i++){
-        for(j=0; j<local_n; j++){
-  	  printf(" %lf ", local_C[i*local_n+j]);
+      for(i=0; i<local_mC; i++){
+        for(j=0; j<local_nC; j++){
+  	  printf(" %lf ", local_C[i*local_nC+j]);
         }
   	  printf("\n");
       }
