@@ -51,7 +51,7 @@ int main(int argc, char** argv){
     for (i=0; i<local_mC; i++){ // The three loops of Matrix-Matrix product
       for (j=0; j<local_nC; j++){
 	for(k=0; k< local_mB; k++){
-          local_C[  i*local_nC +j ] += local_A[ ( shift )*local_mB +  i*local_nA+k  ]  *  local_B[ k * local_nB +j  ];
+          local_C[  i*local_nC +j ] += local_A[  i*local_nA+ k+ shift*local_nB  ]  *  local_B[ k* local_nB  +j  ];
 //	  if(my_rank==1 )printf("%d %lf %lf C[%d,%d]= %lf\n",my_rank, local_A[(shift)*local_mB + i*local_nA+k ]    , local_B[ k* local_nB +j  ], i, j, local_C[ i*local_nC+j  ]);
 	}
       }
