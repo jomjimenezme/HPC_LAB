@@ -68,7 +68,29 @@ if(my_rank==0){free(temp);};
  }
 
 
+void Matrix_print(double A[], int m, int n){
+  int i,j;
+  for(i=0; i<m; i++){
+    for(j=0; j<n; j++){
+      printf("%lf\n", A[i*n+j]);
+    }
+  }  
 
+}
 
+void Parallel_blockrow_print(double local_A[], int m, int m_bar, int l, int  my_rank, int p ){
+  int c;
+  MPI_Status  status; 
+  if(my_rank!=0){MPI_Send(local_A, m_bar*l, MPI_DOUBLE, 0, my_rank, MPI_COMM_WORLD); }
+  if(my_rank==0){ 
+    printf("%d\n%d\n", m, l);
+    Matrix_print(local_A, m_bar,l);
+    for (c=1; c<p; c++){
+      MPI_Recv(local_A, m_bar*l, MPI_DOUBLE, c, c, MPI_COMM_WORLD, &status);
+    Matrix_print(local_A, m_bar,l);
+    }
+  }
+
+}
 
 

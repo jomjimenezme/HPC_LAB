@@ -52,26 +52,9 @@ int main(int argc, char** argv){
    MPI_Barrier(MPI_COMM_WORLD);
    //  MPI_Sendrecv_replace(local_B, n_bar*l, MPI_DOUBLE,  dest  , 0, source , 0, MPI_COMM_WORLD, &status );
   }
- 
 
-//------------------Silly printing------------------------------
- if(my_rank==0) printf("%d\n%d\n", m, l);  
-MPI_Barrier(MPI_COMM_WORLD);
- for (c=0; c<p; c++){
-   MPI_Barrier(MPI_COMM_WORLD);
-   if(my_rank==c){
-//printf("%d\n", my_rank);}
-
-     for(i=0; i<m_bar; i++){
-       for(j=0; j<l; j++){
-         printf("%lf\n", local_C[i*l+j]);
-       }
-          //printf("\n");
-     }  
-   } 
-   sleep(1);  
-   MPI_Barrier(MPI_COMM_WORLD);
-}
+//----------------- Printing------------------------------
+Parallel_blockrow_print(local_C, m, m_bar, l, my_rank, p);
 
   free(local_A);
   free(local_B);
