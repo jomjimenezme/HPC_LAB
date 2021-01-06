@@ -12,14 +12,16 @@ int main(int argc, char** argv){
   double* x; 
   double* local_y;
   double* local_A; 
-  double* aux;
   double start, finish;   
   int N=1000;
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &p);
   MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 for (j=0; j<N; j++){ //So that we measure the time several times
-   
+ MPI_Barrier(MPI_COMM_WORLD);
+  start = MPI_Wtime();
+
+  
 //-----------------Allocation of local matrixes-------------------
   Read_size(&m, &n, my_rank, p);
   local_m=m/p;
@@ -34,9 +36,6 @@ for (j=0; j<N; j++){ //So that we measure the time several times
   x= malloc( n *sizeof( double ) );
   local_y= malloc(local_m*sizeof(double));
   Read_vector(x, n, my_rank, p);
-MPI_Barrier(MPI_COMM_WORLD);
-  start = MPI_Wtime();
-
 
   for(i=0; i<local_m; i++){
     local_y[i]= Serial_dot(&local_A[i*n], x , n);

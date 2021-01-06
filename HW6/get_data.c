@@ -52,8 +52,8 @@ void Read_matrix(double local_A[], int m, int n, int my_rank, int p, char* name)
     temp= malloc( n*m *sizeof( double)); 
     FILE *matrix;
     matrix =fopen(name,"r");
-    fscanf(matrix, "%d", &temp[0]);
-    fscanf(matrix, "%d", &temp[0]);
+    fscanf(matrix, "%lf", &temp[0]);
+    fscanf(matrix, "%lf", &temp[0]);
 
       for(i=0; i<m; i++){ 
         for(j=0; j<n; j++){
