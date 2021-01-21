@@ -2,52 +2,39 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "mpi.h"
+//#include "mpi.h"
 //#include "get_data.c"
 //#include "algebra.c"
-const double h = 1/(13);
 double f(double x, double y);
 double g(double x, double y);
 void boundary_conditions(double grid[], int N);
-double jacobi(double grid[], int N);
+double jacobi(double grid[], int N, double h);
 void Matrix_print(double A[], int m, int n);
-
+const double EPS= 1E-12;  //TOLERANCE
 int main(int argc, char** argv){
   int i;
-  int n; //n will be read and set to N=n+2;
+  int n; //n will be read and we will set to N=n+2;
   int N;
+  int h;
   double* A;
 
-  // Initialize grid values to zero
+  // Initialize grid-related  values 
   n=10;
   N=n+2;
+  h=1/(n+1);
   A= malloc( N*N *sizeof( double ) );
   memset( A, 0, N*N * sizeof(double) ); 
   boundary_conditions(A, N);
-  
-  Matrix_print(A,N,N);
- printf("\n"); 
-/*while (jacobi(A,N)> 0.001){
- //printf("i ");
-i++;
-}*/
-  //Matrix_print(A,N,N);
 
+//-------Jacobi relaxation loop------
+  Matrix_print(A,N,N);
+  printf("\n"); 
+  while (jacobi(A,N,h)> EPS){
+   //printf("i ");
+  i++;
+  }
 
- jacobi(A,N);/*
-  Matrix_print(A,N,N);
- printf("\n");
- printf("\n");
- jacobi(A,N);
-  Matrix_print(A,N,N);
- printf("\n");
- printf("\n");
- jacobi(A,N);
-  Matrix_print(A,N,N);
- printf("\n");
- printf("\n");
- printf("\n");
-*/
+//------ Freeing Memory-------------
   free(A);
 }
 
@@ -85,29 +72,32 @@ double g(double x, double y){
 
 
 
-double jacobi(double grid[], int N)
+double jacobi(double grid[], int N, double h)
 {
   double max=-1.0;
   double delta=100.0;
   double* aux;
   int ii, jj;
-  aux= malloc( sizeof grid ); 
-  memcpy(aux, grid, sizeof grid);
-  //------------Jacobi step----------SILLY VERSION
+  aux= malloc( N*N*sizeof(double) ); 
+  memcpy(aux, grid, N*N*sizeof(double));
+  //------------Jacobi step----------
   for( ii = 1; ii <= N-2; ++ii){
     for( jj = 1; jj <= N-2; ++jj){      
       grid[ii*N + jj] = ( grid[(ii+1)*N + jj] + grid[(ii-1)*N + jj] + grid[ii*N + jj + 1] + grid[ii*N + jj - 1] + h*h*f(ii,jj)  )/4.0; 
     }
   }
- //----------Computing delta-------
- /*for( ii = 1; ii <= N-2; ++ii){
+ //----------Computing delta-------SILLY VERSION!!!! (NOT a problem at the moment)
+ for( ii = 1; ii <= N-2; ++ii){
    for( jj = 1; jj <= N-2; ++jj){
       delta=  ( aux[ii*N + jj] -  grid[ii*N +jj] ) / grid[ii*N+jj] ;
-     if( fabs (delta ) > max  ) //busco el máximo de la diferencia porcentual entre la gridriz anterior y la nueva
+     if( fabs (delta ) > max  ) //We get the maximum percentual difference
        max=  fabs(delta) ;
    }
- }*/
+ }
  Matrix_print(aux,N,N);
+ printf("\n"); 
+ printf("\n"); 
+ Matrix_print(grid,N,N);
  free(aux);
  return max;
 }
