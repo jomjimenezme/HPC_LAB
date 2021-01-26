@@ -112,19 +112,49 @@ double jacobi(double grid[], int N, double h, GRID_INFO_T pgrid)
 {
   double max=-1.0;
   double delta=100.0;
-  double* aux;
+  double* aux; 
+  double* my_up; double* my_down; 
+  double* my_left; double* my_right;
   double x,y;
   int ii, jj;
+  int i_start=0, j_start=0, i_end=0, j_end=0;
   aux= malloc( N*N*sizeof(double) ); 
   memcpy(aux, grid, N*N*sizeof(double));
+
+//------------------Initializing boundaries-------
+  my_up= malloc( N*sizeof(double) );   my_down= malloc( N*sizeof(double) ); 
+  my_left= malloc( N*sizeof(double) ); my_right= malloc( N*sizeof(double) );
+  memcpy(my_up, grid, N*sizeof(double));
+  memcpy(my_down, grid+N*(N-1), N*sizeof(double));
+  for(ii=0; ii<N; ii++){
+    my_left[ii] = grid[ii*N ];
+  }
+  for(ii=0; ii<N; ii++){
+    my_right[ii] = grid[ii*N + N-1 ];
+  }
+//-------------------------------------------------
+
+  /*MPI_Sendrecv(left, N, MPI_DDOUBLE,
+                 int dest, int sendtag,
+                 void right, N, MPI_DOUBLE,
+                 int source, int recvtag, MPI_Comm comm, MPI_Status * status);
+ */
+//Defining the iteration start point for p with B.Conditions
+  if(pgrid.my_row==0) {j_start=1;}
+  if(pgrid.my_row==pgrid.nrows-1) {j_end=N-2;}
+  if(pgrid.my_col==0) {i_start=1;}
+  if(pgrid.my_col==pgrid.ncols-1) {i_end=N-2;}
+
   //------------Jacobi step----------
-  for( ii = 1; ii <= N-2; ++ii){
+  for( ii = i_start; ii <= i_end; ++ii){
     y= 1 -N*pgrid.my_row*h   -ii*h;
-    for( jj = 1; jj <= N-2; ++jj){ 
+    for( jj = j_start; jj <= j_end; ++jj){ 
       x = N*pgrid.my_col*h +h*jj;
-      grid[ii*N + jj] = ( grid[(ii+1)*N + jj] + grid[(ii-1)*N + jj] + grid[ii*N + jj + 1] + grid[ii*N + jj - 1] + h*h*f(ii,jj)  )/4.0; 
+      //grid[ii*N + jj] = ( aux[(ii+1)*N + jj] + aux[(ii-1)*N + jj] + aux[ii*N + jj + 1] + aux[ii*N + jj - 1] + h*h*f(x,y)  )/4.0;       
     }
   }
+
+/*
  //----------Computing delta-------SILLY VERSION!!!! (NOT a problem at the moment)
  for( ii = 1; ii <= N-2; ++ii){
    for( jj = 1; jj <= N-2; ++jj){
@@ -133,12 +163,12 @@ double jacobi(double grid[], int N, double h, GRID_INFO_T pgrid)
        max=  fabs(delta) ;
    }
  }
-
+*/
 /* Matrix_print(aux,N,N);
  printf("\n"); 
  printf("\n"); 
  Matrix_print(grid,N,N);*/
- free(aux);
+ free(aux); free(my_up); free(my_down); free(my_left); free(my_right);
  return max;
 }
 
@@ -175,62 +205,19 @@ MPI_Comm_size(pgrid.row_comm, &ncols);
          }
            }
     }
-  
-/*    
-  int my_rank, p, i,j,k, c;    
-  int m_bar, n_bar;
-  int m, n, l;
-  int source, dest;
-  int shift=0;
-  double* local_C;
-  double* local_A;
-  double* local_B; 
-  MPI_Init(&argc, &argv);
-  MPI_Comm_size(MPI_COMM_WORLD, &p);
-  MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-  MPI_Status  status; 
 
-//-----------------Allocation of local matrixes-------------------
-  
-  Read_size(&m, &n, my_rank, p, "A.txt");
-  Read_size(&n, &l, my_rank, p, "B.txt");
-  m_bar=m/p;
-  n_bar=n/p;
-
-  local_A= malloc( m_bar*n *sizeof( double ) );
-  local_B= malloc( n_bar*l *sizeof( double ) );
-  local_C= malloc( m_bar*l *sizeof( double ) );
-
-  Read_matrix(local_A, m, n, my_rank, p, "A.txt");
-  Read_matrix(local_B, n, l, my_rank, p, "B.txt");
-  
-  memset( local_C, 0, m_bar *l * sizeof(double) ); 
-//------------------Computation of C----------------------
-  source = (my_rank+1)%p ;
-  dest = ( my_rank-1+p )%p;
-
-  for(c=0; c<p; c++){ //Loop for circular shift of B.
-    shift= (c +  my_rank)%p  ; //start position for A after every stage of rotation
-
-   if(c)  {MPI_Sendrecv_replace(local_B, n_bar*l, MPI_DOUBLE,  dest  , 0, source , 0, MPI_COMM_WORLD, &status );}
-    for (i=0; i<m_bar; i++){ // The three loops of Matrix-Matrix product
-      for (j=0; j<l; j++){
-	for(k=0; k< n_bar; k++){
-          local_C[  i*l +j ] += local_A[  i*n + k  + shift*n_bar ]  *  local_B[ k*l +j  ];
-	}
-      }
-    }
-   MPI_Barrier(MPI_COMM_WORLD);
-   //  MPI_Sendrecv_replace(local_B, n_bar*l, MPI_DOUBLE,  dest  , 0, source , 0, MPI_COMM_WORLD, &status );
-  }
-
-//----------------- Printing------------------------------
-Parallel_blockrow_print(local_C, m, m_bar, l, my_rank, p);
-
-  free(local_A);
-  free(local_B);
-  free(local_C);
-  MPI_Finalize();
-      
+/*
+ * check edges 
+ *
+ if (pgrid.my_rank==3){
+ Matrix_print(my_up, N,1);
+ printf("....................\n");
+ Matrix_print(my_down, N,1);
+ printf("....................\n");
+ Matrix_print(my_left, N,1);
+ printf("....................\n");
+ Matrix_print(my_right, N,1);
+ printf("....................\n");
 }
-  */
+ 
+ */
