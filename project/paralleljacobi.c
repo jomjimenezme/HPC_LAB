@@ -28,7 +28,6 @@ int main(int argc, char** argv){
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &p);
   MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-  MPI_Status  status; 
 
   // Initialize grid-related  values 
   N = (32)/p;  //Size of local grid NxN
@@ -110,17 +109,25 @@ double g(double x, double y){
 
 double jacobi(double grid[], int N, double h, GRID_INFO_T pgrid)
 {
+  MPI_Status  status;
   double max=-1.0;
   double delta=100.0;
   double* aux; 
   double* my_up; double* my_down; 
   double* my_left; double* my_right;
+  double* buff;
+  double dest, source;
   double x,y;
   int ii, jj;
-  int i_start=0, j_start=0, i_end=0, j_end=0;
-  aux= malloc( N*N*sizeof(double) ); 
-  memcpy(aux, grid, N*N*sizeof(double));
+  int i_start=0, j_start=0, i_end=N-1, j_end=N-1;
+   
+  source = (pgrid.my_row+1)%pgrid.p ;  //Source and destination
+  dest = ( pgrid.my_row-1+pgrid.p )%pgrid.p;
 
+  aux= malloc( N*N*sizeof(double) ); //copy of the local grid
+  memcpy(aux, grid, N*N*sizeof(double));
+  buff= malloc( N*sizeof(double) ); // Buffer for boundary
+ 
 //------------------Initializing boundaries-------
   my_up= malloc( N*sizeof(double) );   my_down= malloc( N*sizeof(double) ); 
   my_left= malloc( N*sizeof(double) ); my_right= malloc( N*sizeof(double) );
@@ -134,17 +141,17 @@ double jacobi(double grid[], int N, double h, GRID_INFO_T pgrid)
   }
 //-------------------------------------------------
 
-  /*MPI_Sendrecv(left, N, MPI_DDOUBLE,
-                 int dest, int sendtag,
-                 void right, N, MPI_DOUBLE,
-                 int source, int recvtag, MPI_Comm comm, MPI_Status * status);
- */
+MPI_Sendrecv(my_down, N, MPI_DOUBLE,
+                 dest, 0,
+                 buff, N, MPI_DOUBLE,
+                 pgrid.my_col+1, 0, pgrid.col_comm, &status);
+ 
 //Defining the iteration start point for p with B.Conditions
   if(pgrid.my_row==0) {j_start=1;}
   if(pgrid.my_row==pgrid.nrows-1) {j_end=N-2;}
   if(pgrid.my_col==0) {i_start=1;}
   if(pgrid.my_col==pgrid.ncols-1) {i_end=N-2;}
-
+ printf("I am %d and start with i_start=%d  and end with i_end=%d\n", pgrid.my_rank, i_start, i_end);
   //------------Jacobi step----------
   for( ii = i_start; ii <= i_end; ++ii){
     y= 1 -N*pgrid.my_row*h   -ii*h;
