@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-#SBATCH --nodes=1
-#SBATCH --ntasks=4
+#SBATCH --nodes=2
+#SBATCH --ntasks=16
 #SBATCH --exclude=node05
 #SBATCH --exclusive
 #SBATCH --partition=NODE2008

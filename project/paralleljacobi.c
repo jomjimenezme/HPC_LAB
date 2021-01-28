@@ -12,10 +12,10 @@ void boundary_conditions(double grid[], int N, double h, GRID_INFO_T pgrid);
 double jacobi(double grid[], int N, double h, GRID_INFO_T pgrid);
 void Matrix_print(double A[], int m, int n);
 void sillyp(double local_A[], int my_rank, int N, GRID_INFO_T pgrid);
-const double EPS= 1E-12;  //TOLERANCE
+const double EPS= 1E-15;  //TOLERANCE
 
 int main(int argc, char** argv){
-  int i,j;
+  int i;
   int n; //n will be read and we will set to N=n+2;
   int N;
   double h;
@@ -30,7 +30,7 @@ int main(int argc, char** argv){
   MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
   // Initialize grid-related  values 
-  N = (32)/p;  //Size of local grid NxN
+  N = (1024)/p;  //Size of local grid NxN
   n = ( (N-1)*(N-1)*p ); //Global Internal Points
   h = 1.0/(N*p/2-1);
   local_A= malloc( N*N *sizeof( double ) );
@@ -39,21 +39,19 @@ int main(int argc, char** argv){
   MPI_Comm_size(pgrid.row_comm, &ncols);
   MPI_Comm_size(pgrid.col_comm, &nrows);
 
-  //rank, grid order, row, col, grid rank
-//  printf("%d %d %d %d %d \n", my_rank, pgrid.q, pgrid.my_row, pgrid.my_col, pgrid.my_rank);
   boundary_conditions(local_A, N, h, pgrid);
-
-  sillyp(local_A, my_rank, N, pgrid);
-  jacobi(local_A,N,h,pgrid);
-/*
+  double max, gmax;
 //-------Jacobi relaxation loop------
-  Matrix_print(local_A,N,N);
-  printf("\n"); 
-  while (jacobi(local_A,N,h)> EPS){
-   //printf("i ");
-  i++;
+  i=1;
+  gmax=20;
+  while (gmax>EPS){  
+    max=jacobi(local_A,N,h,pgrid);
+    MPI_Allreduce(&max, &gmax, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
+    if(my_rank==0){printf("%d %e \n", i, gmax);}
+    i++;
   }
-*/
+
+//  sillyp(local_A, my_rank, N, pgrid);
 //------ Freeing Memory-------------
   free(local_A);
   MPI_Finalize();
@@ -90,7 +88,7 @@ void boundary_conditions(double grid[], int N, double h, GRID_INFO_T pgrid)
   if(pgrid.my_col==pgrid.ncols-1){
     jj = N-1;//right border
     x = 1.0;
-    for(ii = 1; ii < N; ++ii){
+    for(ii = 0; ii < N; ++ii){
       y= 1 -N*pgrid.my_row*h   -ii*h;
       grid[ii*N + jj] = g(x,y);
     }
@@ -161,51 +159,32 @@ double jacobi(double grid[], int N, double h, GRID_INFO_T pgrid)
   if(pgrid.my_col!=0){//Not in the first grid-col
   MPI_Sendrecv(my_left, N, MPI_DOUBLE,    pgrid.my_col-1 , 3,     buff_left, N, MPI_DOUBLE,    pgrid.my_col-1, 2, pgrid.row_comm, &status);
   }
-/*
-if(pgrid.my_rank==3 ){
-printf("right\n");Matrix_print(buff_right,N,1);
-printf("left\n");Matrix_print(buff_left,N,1);
-printf("down\n");Matrix_print(buff_down,N,1);
-printf("up\n");Matrix_print(buff_up,N,1);
-}*/
 //------------Defining the grid start point for p with B.Conditions----
   if(pgrid.my_row==0) {i_start=1;}
   if(pgrid.my_row==pgrid.nrows-1) {i_end=N-2;}
   if(pgrid.my_col==0) {j_start=1;}
   if(pgrid.my_col==pgrid.ncols-1) {j_end=N-2;}
-// printf("I am %d and start with i_start=%d  and end with i_end=%d,  j_s=%d, j_e%d \n", pgrid.my_rank, i_start, i_end, j_start, j_end);
   
 //---------------------Jacobi step------------------
-/*if(pgrid.my_rank==1){
+if(pgrid.my_rank==3){
   for( ii = i_start; ii <= i_end; ++ii){
     y= 1 -N*pgrid.my_row*h   -ii*h;
     for( jj = j_start; jj <= j_end; ++jj){ 
-      grid[ii*N+jj]=h*h*f(x,y);
       x = N*pgrid.my_col*h +h*jj;  
+      grid[ii*N+jj]=h*h*f(x,y);
       if(jj+1==N){grid[ii*N + jj] += buff_right[ii];}  else{grid[ii*N+jj]+= aux[ii*N+jj+1];} //Right
       if(jj-1<0){ grid[ii*N + jj] += buff_left[ii]; }  else{grid[ii*N+jj]+= aux[ii*N+jj-1];} //Left
       if(ii+1==N){grid[ii*N + jj] += buff_down[jj]; }   else{grid[ii*N+jj]+= aux[(ii+1)*N+jj];} //Down
       if(ii-1<0){ grid[ii*N + jj] += buff_up[jj];   }     else{grid[ii*N+jj]+= aux[(ii+1)*N+jj];} //UP
       grid[ii*N+jj]/=4.0; 
-	//printf("i=%d, j=%d  Aux=%lf  Grid=%lf \n", ii,jj,aux[ii*N+jj], grid[ ii*N+jj]);
+      delta=  fabs( aux[ii*N + jj] -  grid[ii*N +jj] ) / fabs(grid[ii*N+jj]) ;
+      if( delta  > max  )  max=  fabs(delta) ;
+	//printf("i=%d, j=%d ___ x=%lf y=%lf \n", ii,jj,x,y);
       }
     }
+
 }
-*/
-/*
- //----------Computing delta-------SILLY VERSION!!!! (NOT a problem at the moment)
- for( ii = 1; ii <= N-2; ++ii){
-   for( jj = 1; jj <= N-2; ++jj){
-      delta=  ( aux[ii*N + jj] -  grid[ii*N +jj] ) / grid[ii*N+jj] ;
-     if( fabs (delta ) > max  ) //We get the maximum percentual difference
-       max=  fabs(delta) ;
-   }
- }
-*/
-/* Matrix_print(aux,N,N);
- printf("\n"); 
- printf("\n"); 
- Matrix_print(grid,N,N);*/
+//------------------FREEE MEMORY!-------------------------
   free(aux); free(my_up); free(my_down); free(my_left); free(my_right);
   free(buff_up); free(buff_down); free(buff_left); free(buff_right); 
   return max;

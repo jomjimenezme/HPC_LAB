@@ -21,7 +21,7 @@ int main(int argc, char** argv){
     // Initialize grid-related  values 
   n=14;
   N=n+2;
-  h=1/(n+1);
+  h=1.0/(n+1);
   A= malloc( N*N *sizeof( double ) );
   memset( A, 0, N*N * sizeof(double) ); 
   boundary_conditions(A, N);
