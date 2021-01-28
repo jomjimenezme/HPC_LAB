@@ -27,8 +27,10 @@ int main(int argc, char** argv){
   boundary_conditions(A, N);
 
 //-------Jacobi relaxation loop------
+  printf("\n");
+  jacobi(A,N,h);
+
  Matrix_print(A,N,N);
-  printf("\n"); 
   while (jacobi(A,N,h)> EPS){
   i++;
   }
