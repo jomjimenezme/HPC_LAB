@@ -51,7 +51,11 @@ int main(int argc, char** argv){
     i++;
   }
 
-//  sillyp(local_A, my_rank, N, pgrid);
+
+
+  //sillyp(local_A, my_rank, N, pgrid);
+    //max=jacobi(local_A,N,h,pgrid);
+  //sillyp(local_A, my_rank, N, pgrid);
 //------ Freeing Memory-------------
   free(local_A);
   MPI_Finalize();
@@ -166,7 +170,7 @@ double jacobi(double grid[], int N, double h, GRID_INFO_T pgrid)
   if(pgrid.my_col==pgrid.ncols-1) {j_end=N-2;}
   
 //---------------------Jacobi step------------------
-if(pgrid.my_rank==3){
+if(pgrid.my_rank==0){
   for( ii = i_start; ii <= i_end; ++ii){
     y= 1 -N*pgrid.my_row*h   -ii*h;
     for( jj = j_start; jj <= j_end; ++jj){ 
@@ -177,8 +181,10 @@ if(pgrid.my_rank==3){
       if(ii+1==N){grid[ii*N + jj] += buff_down[jj]; }   else{grid[ii*N+jj]+= aux[(ii+1)*N+jj];} //Down
       if(ii-1<0){ grid[ii*N + jj] += buff_up[jj];   }     else{grid[ii*N+jj]+= aux[(ii+1)*N+jj];} //UP
       grid[ii*N+jj]/=4.0; 
-      delta=  fabs( aux[ii*N + jj] -  grid[ii*N +jj] ) / fabs(grid[ii*N+jj]) ;
-      if( delta  > max  )  max=  fabs(delta) ;
+      delta=  fabs( aux[ii*N + jj] -  grid[ii*N +jj] ) ;
+     
+//	printf("i=%d, j=%d ___ delta=%lf \n", ii,jj,delta);
+      if( delta  > max  ){  max=  delta ; /*printf("i=%d, j=%d ___ delta=%e \n", ii,jj,max);*/}
 	//printf("i=%d, j=%d ___ x=%lf y=%lf \n", ii,jj,x,y);
       }
     }
