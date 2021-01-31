@@ -4,8 +4,8 @@
 #include <math.h>
 #include "mpi.h"
 #include "grid.c"
-#include "get_data.c"
-
+//#include "get_data.c"
+//#include "algebra.c"
 double f(double x, double y);
 double g(double x, double y);
 void boundary_conditions(double grid[], int N, double h, GRID_INFO_T pgrid);
@@ -29,44 +29,41 @@ int main(int argc, char** argv){
   MPI_Init(&argc, &argv);
   MPI_Comm_size(MPI_COMM_WORLD, &p);
   MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
+
+  // Initialize grid-related  values 
+  N = (32)/p;  //Size of local grid NxN
+  n = ( (N-1)*(N-1)*p ); //Global Internal Points
+  h = 1.0/(N*p/2.0-1.0);
+  local_A= malloc( N*N *sizeof( double ) );
+  memset( local_A, 0, N*N * sizeof(double) ); 
   Setup_grid(&pgrid);
   MPI_Comm_size(pgrid.row_comm, &ncols);
   MPI_Comm_size(pgrid.col_comm, &nrows);
 
-  // Initialize grid-related  values 
-  N = (64)/p;  //Size of local grid NxN
-  n = N*nrows - 2  ; //Global Internal Points
-  h = 1.0/(n+1.0);
-  local_A= malloc( N*N *sizeof( double ) );
-  memset( local_A, 0, N*N * sizeof(double) ); 
- 
   boundary_conditions(local_A, N, h, pgrid);
   double max, gmax;
 //-------Jacobi relaxation loop------
-//  for( j=1; j<1000; j++){
+
+      max=jacobi(local_A,N,h,pgrid);
+/*  for( j=1; j<1000; j++){
     gmax=20;
     MPI_Barrier(MPI_COMM_WORLD);
     start = MPI_Wtime();
     
     i=1;
-/*    while (gmax>EPS){  
-      max=jacobi(local_A,N,h,pgrid);
+    while (gmax>EPS){  
+    max=jacobi(local_A,N,h,pgrid);
+//  sillyp(local_A, my_rank, N, pgrid);
       MPI_Allreduce(&max, &gmax, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
       if(my_rank==0){printf("%d %e \n", i, gmax);}
       i++;
-    }*/
+    }
     MPI_Barrier(MPI_COMM_WORLD);
     finish = MPI_Wtime();
     if(my_rank==0){    printf("%d %lf %.16lf \n", p, finish-start, gmax);  }
-  //  }
-
-
-
-  max=jacobi(local_A,N,h,pgrid);
-      MPI_Allreduce(&max, &gmax, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-    MPI_Barrier(MPI_COMM_WORLD);
-    if(my_rank==0){    printf("%d %lf %.16lf \n", p, finish-start, gmax);  }
-  parallel_print("matrix.d", N, N, local_A, ncols, pgrid);
+  }*/
+    //max=jacobi(local_A,N,h,pgrid);
+  //sillyp(local_A, my_rank, N, pgrid);
 //------ Freeing Memory-------------
   free(local_A);
   MPI_Finalize();
@@ -178,12 +175,14 @@ double jacobi(double grid[], int N, double h, GRID_INFO_T pgrid)
   if(pgrid.my_row==pgrid.nrows-1) {i_end=N-2;}
   if(pgrid.my_col==0) {j_start=1;}
   if(pgrid.my_col==pgrid.ncols-1) {j_end=N-2;}
-  
+  int color; //0== REDi/even;  1==BLACK
 //---------------------Jacobi step------------------
 //if(pgrid.my_rank==0){
   for( ii = i_start; ii <= i_end; ++ii){
     y= 1 -N*pgrid.my_row*h   -ii*h;
     for( jj = j_start; jj <= j_end; ++jj){ 
+     color=1;
+     if( (ii+jj)%2 ==0 ) {color=0;} 
       x = N*pgrid.my_col*h +h*jj;  
       grid[ii*N+jj]=h*h*f(x,y);
       if(jj+1==N){grid[ii*N + jj] += buff_right[ii];}  else{grid[ii*N+jj]+= aux[ii*N+jj+1];} //Right
@@ -192,8 +191,8 @@ double jacobi(double grid[], int N, double h, GRID_INFO_T pgrid)
       if(ii-1<0){ grid[ii*N + jj] += buff_up[jj];   }     else{grid[ii*N+jj]+= aux[(ii+1)*N+jj];} //UP
       grid[ii*N+jj]/=4.0; 
       delta=  fabs( aux[ii*N + jj] -  grid[ii*N +jj] ) ;
-     
-      if( delta  > max  ){  max=  delta ; printf("p==%d i=%d, j=%d ___ delta=%e \n", pgrid.my_rank, ii,jj,max);}
+    printf("p==%d i=%d, j=%d _mod=%d__ color %d \n", pgrid.my_rank, ii,jj,(ii+jj)%2, color); 
+      if( delta  > max  ){  max=  delta ; /*printf("p==%d i=%d, j=%d ___ delta=%e \n", pgrid.my_rank, ii,jj,max);*/}
 	//printf("i=%d, j=%d ___ x=%lf y=%lf \n", ii,jj,x,y);
     }
   }
