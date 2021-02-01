@@ -11,6 +11,7 @@ double g(double x, double y);
 void boundary_conditions(double grid[], int N, double h, GRID_INFO_T pgrid);
 double jacobi(double grid[], int N, double h, GRID_INFO_T pgrid);
 void Matrix_print(double A[], int m, int n);
+void sillyp(double local_A[], int my_rank, int N, GRID_INFO_T pgrid);
 const double EPS= 1E-15;  //TOLERANCE
 
 int main(int argc, char** argv){
@@ -48,25 +49,25 @@ int main(int argc, char** argv){
     start = MPI_Wtime();
     
     i=1;
-    while (gmax>=EPS){  
+/*    while (gmax>EPS){  
       max=jacobi(local_A,N,h,pgrid);
       MPI_Allreduce(&max, &gmax, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
       if(my_rank==0){printf("%d %e \n", i, gmax);}
       i++;
-    }
+    }*/
     MPI_Barrier(MPI_COMM_WORLD);
     finish = MPI_Wtime();
     if(my_rank==0){    printf("%d %lf %.16lf \n", p, finish-start, gmax);  }
   //  }
 
-  parallel_print("matrix.d", N, N, local_A, ncols, pgrid);
-/*
+  //parallel_print("matrix.d", N, N, local_A, ncols, pgrid);
+
 for(i=1;i<=1;i++){
   max=jacobi(local_A,N,h,pgrid);
       MPI_Allreduce(&max, &gmax, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
     MPI_Barrier(MPI_COMM_WORLD);
    // if(my_rank==0){    printf("%d %lf %.16lf \n", p, finish-start, gmax);  }
-}*/
+}
 //------ Freeing Memory-------------
   free(local_A);
   MPI_Finalize();
@@ -180,25 +181,32 @@ double jacobi(double grid[], int N, double h, GRID_INFO_T pgrid)
   if(pgrid.my_col==pgrid.ncols-1) {j_end=N-2;}
 
 //---------------------Jacobi step------------------
-//if(pgrid.my_rank==0){
+if(pgrid.my_rank==0){
   for( ii = i_start; ii <= i_end; ++ii){
     y= 1 -N*pgrid.my_row*h   -ii*h;
     for( jj = j_start; jj <= j_end; ++jj){ 
       x = N*pgrid.my_col*h +h*jj;  
       grid[ii*N+jj]=h*h*f(x,y);
-      if(jj+1==N){grid[ii*N + jj] += buff_right[ii];}  else{grid[ii*N+jj]+= aux[ii*N+jj+1];} //Right
-      if(jj-1<0){ grid[ii*N + jj] += buff_left[ii]; }  else{grid[ii*N+jj]+= aux[ii*N+jj-1];} //Left
+      if(jj+1==N){grid[ii*N + jj] += buff_right[ii];  printf("i=%d  j=%d ---RIGHT=%f\n", ii,jj,buff_right[ii]);}  
+	else{grid[ii*N+jj]+= aux[ii*N+jj+1]; printf("i=%d  j=%d ---RIGHT=%f\n", ii,jj, aux[ii*N+jj+1]);} //Right
+
+
+      if(jj-1<0){ grid[ii*N + jj] += buff_left[ii]; printf("i=%d  j=%d ---LEFT=%f\n", ii,jj,buff_left[ii]);}  
+	else{grid[ii*N+jj]+= aux[ii*N+jj-1]; printf("i=%d  j=%d ---RIGHT=%f\n", ii,jj, aux[ii*N+jj-1]); } //Left
+
       if(ii+1==N){grid[ii*N + jj] += buff_down[jj]; }   else{grid[ii*N+jj]+= aux[(ii+1)*N+jj];} //Down
-      if(ii-1<0){ grid[ii*N + jj] += buff_up[jj];   }     else{grid[ii*N+jj]+= aux[(ii-1)*N+jj];} //UP
+
+      if(ii-1<0){ grid[ii*N + jj] += buff_up[jj];   }     else{grid[ii*N+jj]+= aux[(ii+1)*N+jj];} //UP
+
       grid[ii*N+jj]/=4.0; 
-      delta=  fabs( aux[ii*N + jj] -  grid[ii*N +jj] ) ;
+      //delta=  fabs( aux[ii*N + jj] -  grid[ii*N +jj] ) ;
      
       if( delta  > max  ){  max=  delta ; /*printf("p==%d i=%d, j=%d ___ delta=%e \n", pgrid.my_rank, ii,jj,max);*/}
 //	printf("i=%d, j=%d ___ x=%lf y=%lf \n", ii,jj,x,y);
     }
   }
 //printf("I am process %d and i_start=%d   i_end=%d   j_start=%d  j_end=%d\n",pgrid.my_rank, i_start, i_end, j_start, j_end);
-//}
+}
 //------------------FREEE MEMORY!-------------------------
   free(aux); free(my_up); free(my_down); free(my_left); free(my_right);
   free(buff_up); free(buff_down); free(buff_left); free(buff_right); 
