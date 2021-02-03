@@ -9,7 +9,7 @@
 #include "sor.c"
 
 void Matrix_print(double A[], int m, int n);
-const double EPS= 1E-5;  //TOLERANCE
+const double EPS= 1E-14;  //TOLERANCE
 
 int main(int argc, char** argv){
   int i, j;
@@ -50,15 +50,15 @@ int main(int argc, char** argv){
    while (gmax>EPS){  
       max=sor(local_A,N,h,pgrid,w);
       MPI_Allreduce(&max, &gmax, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
-     // if(my_rank==0){printf("%d %e \n", i, gmax);}
-      //i++;
+    //  if(my_rank==0){printf("%d %e \n", i, gmax);}
+     // i++;
     }
     MPI_Barrier(MPI_COMM_WORLD);
     finish = MPI_Wtime();
     if(my_rank==0){    printf("%d %lf %.16lf \n", p, finish-start, gmax);  }
   //}
 
-  //parallel_print("matrix.d", N, N, local_A, ncols, pgrid);
+  parallel_print("matrix.d", N, N, local_A, ncols, pgrid);
 
 
 ///------ Freeing Memory-------------

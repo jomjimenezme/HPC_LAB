@@ -55,12 +55,12 @@ double sor(double grid[], int N, double h, GRID_INFO_T pgrid, double w)
       x = N*pgrid.my_col*h +h*jj;
         color=1;
       if( (ii+jj)%2 ==0 ) {color=0; 
-        grid[ii*N+jj] = 4*grid[ii*N+jj]* (1-w) + h*h*f(x,y) ;
-        if(jj+1==N){grid[ii*N + jj] += buff_right[ii]*w;}  else{grid[ii*N+jj]+= grid[ii*N+jj+1]*w;} //Right
-        if(jj-1<0){ grid[ii*N + jj] += buff_left[ii]*w; }  else{grid[ii*N+jj]+= grid[ii*N+jj-1]*w;} //Left
-        if(ii+1==N){grid[ii*N + jj] += buff_down[jj]*w; }  else{grid[ii*N+jj]+= grid[(ii+1)*N+jj]*w;} //Down
-        if(ii-1<0){ grid[ii*N + jj] += buff_up[jj]*w;   }  else{grid[ii*N+jj]+= grid[(ii-1)*N+jj]*w;} //UP
-        grid[ii*N+jj]*=0.25;
+        grid[ii*N+jj] = 4*grid[ii*N+jj]* (1-w)/w + h*h*f(x,y) ;
+        if(jj+1==N){grid[ii*N + jj] += buff_right[ii];}  else{grid[ii*N+jj]+= grid[ii*N+jj+1];} //Right
+        if(jj-1<0){ grid[ii*N + jj] += buff_left[ii]; }  else{grid[ii*N+jj]+= grid[ii*N+jj-1];} //Left
+        if(ii+1==N){grid[ii*N + jj] += buff_down[jj]; }  else{grid[ii*N+jj]+= grid[(ii+1)*N+jj];} //Down
+        if(ii-1<0){ grid[ii*N + jj] += buff_up[jj];   }  else{grid[ii*N+jj]+= grid[(ii-1)*N+jj];} //UP
+        grid[ii*N+jj]*=0.25*w;
         delta=  fabs( aux[ii*N + jj] -  grid[ii*N +jj] ) ;
         if( delta  > max  ){  max=  delta ;}
       } 
@@ -76,12 +76,12 @@ double sor(double grid[], int N, double h, GRID_INFO_T pgrid, double w)
       color=1;
       if( (ii+jj)%2 !=0 ) {color=1; 
 
-        grid[ii*N+jj] = 4*grid[ii*N+jj]* (1-w) + h*h*f(x,y) ;
-        if(jj+1==N){grid[ii*N + jj] += buff_right[ii]*w;}  else{grid[ii*N+jj]+= grid[ii*N+jj+1]*w;} //Right
-        if(jj-1<0){ grid[ii*N + jj] += buff_left[ii]*w; }  else{grid[ii*N+jj]+= grid[ii*N+jj-1]*w;} //Left
-        if(ii+1==N){grid[ii*N + jj] += buff_down[jj]*w; }  else{grid[ii*N+jj]+= grid[(ii+1)*N+jj]*w;} //Down
-        if(ii-1<0){ grid[ii*N + jj] += buff_up[jj]*w;   }  else{grid[ii*N+jj]+= grid[(ii-1)*N+jj]*w;} //UP
-        grid[ii*N+jj]*=0.25;
+        grid[ii*N+jj] = 4*grid[ii*N+jj]* (1-w)/w + h*h*f(x,y) ;
+        if(jj+1==N){grid[ii*N + jj] += buff_right[ii];}  else{grid[ii*N+jj]+= grid[ii*N+jj+1];} //Right
+        if(jj-1<0){ grid[ii*N + jj] += buff_left[ii]; }  else{grid[ii*N+jj]+= grid[ii*N+jj-1];} //Left
+        if(ii+1==N){grid[ii*N + jj] += buff_down[jj]; }  else{grid[ii*N+jj]+= grid[(ii+1)*N+jj];} //Down
+        if(ii-1<0){ grid[ii*N + jj] += buff_up[jj];   }  else{grid[ii*N+jj]+= grid[(ii-1)*N+jj];} //UP
+        grid[ii*N+jj]*=0.25*w;
         delta=  fabs( aux[ii*N + jj] -  grid[ii*N +jj] ) ;
         if( delta  > max  ){  max=  delta ;}
 
