@@ -17,6 +17,7 @@ int main(int argc, char** argv){
   int N;
   double max, gmax;
   double h;
+  double w;
   double* local_A;
   double start, finish;
   GRID_INFO_T pgrid;
@@ -36,8 +37,7 @@ int main(int argc, char** argv){
   N=(2+n)/nrows;           // Size of local matrix NxN  
   h = 1.0/(n+1.0);
   local_A= malloc( N*N *sizeof( double ) );
-//printf("we read internals n=%d so local N=%d \n",n, N);
-
+  w= 1.0- 4.0*M_PI/(n+1.0);
 // for( j=1; j<10; j++){//loop for average in scaling tudy
     memset( local_A, 0.0, N*N * sizeof(double) );  
     boundary_conditions(local_A, N, h, pgrid);
@@ -47,8 +47,8 @@ int main(int argc, char** argv){
     start = MPI_Wtime();
     
     //i=1;
-    while (gmax>EPS){  
-      max=sor(local_A,N,h,pgrid);
+   while (gmax>EPS){  
+      max=sor(local_A,N,h,pgrid,w);
       MPI_Allreduce(&max, &gmax, 1, MPI_DOUBLE, MPI_MAX, MPI_COMM_WORLD);
      // if(my_rank==0){printf("%d %e \n", i, gmax);}
       //i++;
@@ -58,7 +58,7 @@ int main(int argc, char** argv){
     if(my_rank==0){    printf("%d %lf %.16lf \n", p, finish-start, gmax);  }
   //}
 
-  parallel_print("matrix.d", N, N, local_A, ncols, pgrid);
+  //parallel_print("matrix.d", N, N, local_A, ncols, pgrid);
 
 
 ///------ Freeing Memory-------------

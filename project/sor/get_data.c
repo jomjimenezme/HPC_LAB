@@ -6,7 +6,7 @@
 void Read_N(int* N , int my_rank, int p){
   if(my_rank==0){
     FILE *fp;
-    fp =fopen("N.d","r");
+    fp =fopen("size.d","r");
     fscanf(fp, "%d", N);
     fclose(fp);
   }

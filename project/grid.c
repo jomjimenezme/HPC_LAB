@@ -65,3 +65,26 @@ void Setup_grid(GRID_INFO_T* grid){
 
 
 
+
+void exchange_boundaries( double my_up[], double buff_up[], double my_down[], double buff_down[], double my_left[], double buff_left[], double my_right[], double buff_right[], int N, GRID_INFO_T pgrid){
+  MPI_Status  status;
+
+ //------------------Exchange UP and DOWN  edges-------------------------------
+  if(pgrid.my_row!=pgrid.nrows-1){// Not in the last grid-row 
+  MPI_Sendrecv(my_down, N, MPI_DOUBLE,    pgrid.my_row+1 , 0,     buff_down, N, MPI_DOUBLE,  pgrid.my_row+1  , 1, pgrid.col_comm, &status);
+  }
+  if(pgrid.my_row!=0){//Not in the first grid-row
+  MPI_Sendrecv(my_up, N, MPI_DOUBLE,    pgrid.my_row-1 , 1,     buff_up, N, MPI_DOUBLE,    pgrid.my_row-1, 0, pgrid.col_comm, &status);
+  }
+ // printf (" COL COM: my rank is %d and I received this from DOWN: %lf, and this from UP:%lf\n", pgrid.my_rank, buff_down[0], buff_up[0]);
+
+//------------------Exchange LEFT and RIGHT edges-------------------------------
+  if(pgrid.my_col!=pgrid.ncols-1){// Not in the last grid-col 
+  MPI_Sendrecv(my_right, N, MPI_DOUBLE,    pgrid.my_col+1 , 2,     buff_right, N, MPI_DOUBLE,  pgrid.my_col+1  , 3, pgrid.row_comm, &status);
+  }
+  if(pgrid.my_col!=0){//Not in the first grid-col
+  MPI_Sendrecv(my_left, N, MPI_DOUBLE,    pgrid.my_col-1 , 3,     buff_left, N, MPI_DOUBLE,    pgrid.my_col-1, 2, pgrid.row_comm, &status);
+  }
+  //printf (" ROW COM: my rank is %d and I received this from LEFT: %lf, and this from RIGHT:%lf\n", pgrid.my_rank, buff_left[0], buff_right[0]);
+  }
+

@@ -4,10 +4,8 @@
 #include <math.h>
 #include "mpi.h"
 
-
-double sor(double grid[], int N, double h, GRID_INFO_T pgrid)
+double sor(double grid[], int N, double h, GRID_INFO_T pgrid, double w)
 {
-  MPI_Status  status;
   double max=-1.0;
   double delta=100.0;
   double* aux;
@@ -40,52 +38,58 @@ double sor(double grid[], int N, double h, GRID_INFO_T pgrid)
     my_right[ii] = grid[ii*N + N-1 ];
   }
 
- //------------------Exchange UP and DOWN  edges-------------------------------
-  if(pgrid.my_row!=pgrid.nrows-1){// Not in the last grid-row 
-  MPI_Sendrecv(my_down, N, MPI_DOUBLE,    pgrid.my_row+1 , 0,     buff_down, N, MPI_DOUBLE,  pgrid.my_row+1  , 1, pgrid.col_comm, &status);
-  }
-  if(pgrid.my_row!=0){//Not in the first grid-row
-  MPI_Sendrecv(my_up, N, MPI_DOUBLE,    pgrid.my_row-1 , 1,     buff_up, N, MPI_DOUBLE,    pgrid.my_row-1, 0, pgrid.col_comm, &status);
-  }
-
- // printf (" COL COM: my rank is %d and I received this from DOWN: %lf, and this from UP:%lf\n", pgrid.my_rank, buff_down[0], buff_up[0]);
-
-//------------------Exchange LEFT and RIGHT edges-------------------------------
-  if(pgrid.my_col!=pgrid.ncols-1){// Not in the last grid-col 
-  MPI_Sendrecv(my_right, N, MPI_DOUBLE,    pgrid.my_col+1 , 2,     buff_right, N, MPI_DOUBLE,  pgrid.my_col+1  , 3, pgrid.row_comm, &status);
-  }
-  if(pgrid.my_col!=0){//Not in the first grid-col
-  MPI_Sendrecv(my_left, N, MPI_DOUBLE,    pgrid.my_col-1 , 3,     buff_left, N, MPI_DOUBLE,    pgrid.my_col-1, 2, pgrid.row_comm, &status);
-  }
-  //printf (" ROW COM: my rank is %d and I received this from LEFT: %lf, and this from RIGHT:%lf\n", pgrid.my_rank, buff_left[0], buff_right[0]);
 //------------Defining the grid start point for p with B.Conditions----
   if(pgrid.my_row==0) {i_start=1;}
   if(pgrid.my_row==pgrid.nrows-1) {i_end=N-2;}
   if(pgrid.my_col==0) {j_start=1;}
   if(pgrid.my_col==pgrid.ncols-1) {j_end=N-2;}
 
-//---------------------Jacobi step------------------
+//---------------------SOR step------------------
 //
-int color; //0== REDi/even;  1==BLACK
+  exchange_boundaries(my_up, buff_up, my_down, buff_down, my_left, buff_left, my_right, buff_right, N,  pgrid);
+  int color; //0== REDi/even;  1==BLACK
 //if(pgrid.my_rank==0){
   for( ii = i_start; ii <= i_end; ++ii){
     y= 1 -N*pgrid.my_row*h   -ii*h;
     for( jj = j_start; jj <= j_end; ++jj){
-     color=1;
-     if( (ii+jj)%2 ==0 ) {color=0;} 
       x = N*pgrid.my_col*h +h*jj;
+        color=1;
+      if( (ii+jj)%2 ==0 ) {color=0; 
+        grid[ii*N+jj] = 4*grid[ii*N+jj]* (1-w) + h*h*f(x,y) ;
+        if(jj+1==N){grid[ii*N + jj] += buff_right[ii]*w;}  else{grid[ii*N+jj]+= grid[ii*N+jj+1]*w;} //Right
+        if(jj-1<0){ grid[ii*N + jj] += buff_left[ii]*w; }  else{grid[ii*N+jj]+= grid[ii*N+jj-1]*w;} //Left
+        if(ii+1==N){grid[ii*N + jj] += buff_down[jj]*w; }  else{grid[ii*N+jj]+= grid[(ii+1)*N+jj]*w;} //Down
+        if(ii-1<0){ grid[ii*N + jj] += buff_up[jj]*w;   }  else{grid[ii*N+jj]+= grid[(ii-1)*N+jj]*w;} //UP
+        grid[ii*N+jj]*=0.25;
+        delta=  fabs( aux[ii*N + jj] -  grid[ii*N +jj] ) ;
+        if( delta  > max  ){  max=  delta ;}
+      } 
+     }
+   }
 
-      grid[ii*N+jj]=h*h*f(x,y);
-      if(jj+1==N){grid[ii*N + jj] += buff_right[ii];}  else{grid[ii*N+jj]+= aux[ii*N+jj+1];} //Right
-      if(jj-1<0){ grid[ii*N + jj] += buff_left[ii]; }  else{grid[ii*N+jj]+= aux[ii*N+jj-1];} //Left
-      if(ii+1==N){grid[ii*N + jj] += buff_down[jj]; }   else{grid[ii*N+jj]+= aux[(ii+1)*N+jj];} //Down
-      if(ii-1<0){ grid[ii*N + jj] += buff_up[jj];   }     else{grid[ii*N+jj]+= aux[(ii-1)*N+jj];} //UP
-      grid[ii*N+jj]/=4.0;
-      delta=  fabs( aux[ii*N + jj] -  grid[ii*N +jj] ) ;
+  MPI_Barrier(MPI_COMM_WORLD);  
+  exchange_boundaries(my_up, buff_up, my_down, buff_down, my_left, buff_left, my_right, buff_right, N,  pgrid);
+  for( ii = i_start; ii <= i_end; ++ii){
+    y= 1 -N*pgrid.my_row*h   -ii*h;
+    for( jj = j_start; jj <= j_end; ++jj){
+      x = N*pgrid.my_col*h +h*jj;
+      color=1;
+      if( (ii+jj)%2 !=0 ) {color=1; 
 
-      if( delta  > max  ){  max=  delta ;}
-    }
-  }
+        grid[ii*N+jj] = 4*grid[ii*N+jj]* (1-w) + h*h*f(x,y) ;
+        if(jj+1==N){grid[ii*N + jj] += buff_right[ii]*w;}  else{grid[ii*N+jj]+= grid[ii*N+jj+1]*w;} //Right
+        if(jj-1<0){ grid[ii*N + jj] += buff_left[ii]*w; }  else{grid[ii*N+jj]+= grid[ii*N+jj-1]*w;} //Left
+        if(ii+1==N){grid[ii*N + jj] += buff_down[jj]*w; }  else{grid[ii*N+jj]+= grid[(ii+1)*N+jj]*w;} //Down
+        if(ii-1<0){ grid[ii*N + jj] += buff_up[jj]*w;   }  else{grid[ii*N+jj]+= grid[(ii-1)*N+jj]*w;} //UP
+        grid[ii*N+jj]*=0.25;
+        delta=  fabs( aux[ii*N + jj] -  grid[ii*N +jj] ) ;
+        if( delta  > max  ){  max=  delta ;}
+
+      } 
+     }
+   }
+
+
 //}
 //------------------FREEE MEMORY!-------------------------
   free(aux); free(my_up); free(my_down); free(my_left); free(my_right);

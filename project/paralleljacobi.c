@@ -31,13 +31,14 @@ int main(int argc, char** argv){
   MPI_Comm_size(pgrid.row_comm, &ncols);
   MPI_Comm_size(pgrid.col_comm, &nrows);
 
-  // Initialize grid-related  values 
-  N = (128)/p;  //Size of local grid NxN
-  n = N*nrows - 2  ; //Global Internal Points
+  // Initialize grid-related  values
+  Read_N(&n, my_rank, p);  //n^2 Global Internal Points 
+  N=(2+n)/nrows;           // Size of local matrix NxN  
   h = 1.0/(n+1.0);
   local_A= malloc( N*N *sizeof( double ) );
+//printf("we read internals n=%d so local N=%d \n",n, N);
 
-//  for( j=1; j<100; j++){//loop for average in scaling tudy
+ for( j=1; j<10; j++){//loop for average in scaling tudy
     memset( local_A, 0.0, N*N * sizeof(double) );  
     boundary_conditions(local_A, N, h, pgrid);
   //-------Jacobi relaxation loop------
@@ -55,9 +56,11 @@ int main(int argc, char** argv){
     MPI_Barrier(MPI_COMM_WORLD);
     finish = MPI_Wtime();
     if(my_rank==0){    printf("%d %lf %.16lf \n", p, finish-start, gmax);  }
-//  }
+  }
 
   parallel_print("matrix.d", N, N, local_A, ncols, pgrid);
+
+
 ///------ Freeing Memory-------------
   free(local_A);
   MPI_Finalize();
