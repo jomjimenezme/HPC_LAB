@@ -88,3 +88,20 @@ void exchange_boundaries( double my_up[], double buff_up[], double my_down[], do
   //printf (" ROW COM: my rank is %d and I received this from LEFT: %lf, and this from RIGHT:%lf\n", pgrid.my_rank, buff_left[0], buff_right[0]);
   }
 
+
+
+//------------------Initializing boundaries------- 
+void initialize_buffers(double grid[], double my_up[], double my_down[], 
+	double my_left[], double my_right[] , int N)
+{
+  int ii;
+  memcpy(my_up, grid, N*sizeof(double));
+  memcpy(my_down, grid+N*(N-1), N*sizeof(double));
+  for(ii=0; ii<N; ii++){
+    my_left[ii] = grid[ii*N ];
+  }
+  for(ii=0; ii<N; ii++){
+    my_right[ii] = grid[ii*N + N-1 ];
+  }
+
+}

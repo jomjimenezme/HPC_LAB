@@ -56,9 +56,9 @@ int main(int argc, char** argv){
     MPI_Barrier(MPI_COMM_WORLD);
     finish = MPI_Wtime();
     if(my_rank==0){    printf("%d %lf %.16lf \n", p, finish-start, gmax);  }
-  }
+ }
 
-  parallel_print("matrix.d", N, N, local_A, ncols, pgrid);
+ // parallel_print("matrix.d", N, N, local_A, ncols, pgrid);
 
 
 ///------ Freeing Memory-------------

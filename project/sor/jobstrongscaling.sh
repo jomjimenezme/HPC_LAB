@@ -7,7 +7,7 @@
 i=2
 while [ $i -lt 9 ]
 do
-  mpirun -np $[$i*$i] --mca btl_openib_allow_ib true ./strongscaling_SOR  >srongscaling_SOR$[$i*$i].d
+  mpirun -np $[$i*$i] --mca btl_openib_allow_ib true ./strongscaling_jacobi  >srongscaling_jacobi$[$i*$i].d
   i=$[$i+1]
   wait
 done

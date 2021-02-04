@@ -4,40 +4,19 @@
 #include <math.h>
 #include "mpi.h"
 
-double sor(double grid[], int N, double h, GRID_INFO_T pgrid, double w)
+double sor(double grid[], int N, double h, GRID_INFO_T pgrid, double w, double aux[], 
+	double my_up[],   double my_down[],   double my_left[],   double my_right[],
+	double buff_up[], double buff_down[], double buff_left[], double buff_right[]
+	)
 {
   double max=-1.0;
   double delta=100.0;
-  double* aux;
-  double* my_up; double* my_down;
-  double* my_left; double* my_right;
-  double* buff_down; double* buff_up;
-  double* buff_left; double* buff_right;
   double x,y;
   int ii, jj;
   int i_start=0, j_start=0, i_end=N-1, j_end=N-1;
 
-
-  aux= malloc( N*N*sizeof(double) ); //copy of the local grid
-  memcpy(aux, grid, N*N*sizeof(double));
-
-  buff_down  = malloc( N*sizeof(double) ); // Buffer for msg
-  buff_left  = malloc( N*sizeof(double) ); // Buffer for msg
-  buff_up    = malloc( N*sizeof(double) ); // Buffer for msg
-  buff_right = malloc( N*sizeof(double) ); // Buffer for msg
-  //------------------Initializing boundaries------- 
-
-  my_up= malloc( N*sizeof(double) );   my_down= malloc( N*sizeof(double) );
-  my_left= malloc( N*sizeof(double) ); my_right= malloc( N*sizeof(double) );
-  memcpy(my_up, grid, N*sizeof(double));
-  memcpy(my_down, grid+N*(N-1), N*sizeof(double));
-  for(ii=0; ii<N; ii++){
-    my_left[ii] = grid[ii*N ];
-  }
-  for(ii=0; ii<N; ii++){
-    my_right[ii] = grid[ii*N + N-1 ];
-  }
-
+  memcpy(aux, grid, N*N*sizeof(double));  //for the iteration error
+ 
 //------------Defining the grid start point for p with B.Conditions----
   if(pgrid.my_row==0) {i_start=1;}
   if(pgrid.my_row==pgrid.nrows-1) {i_end=N-2;}
@@ -91,9 +70,6 @@ double sor(double grid[], int N, double h, GRID_INFO_T pgrid, double w)
 
 
 //}
-//------------------FREEE MEMORY!-------------------------
-  free(aux); free(my_up); free(my_down); free(my_left); free(my_right);
-  free(buff_up); free(buff_down); free(buff_left); free(buff_right);
   return max;
 }
 
