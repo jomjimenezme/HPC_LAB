@@ -46,7 +46,7 @@ double sor(double grid[], int N, double h, GRID_INFO_T pgrid, double w, double a
      }
    }
 
-  MPI_Barrier(MPI_COMM_WORLD);  
+//  MPI_Barrier(MPI_COMM_WORLD);  
   exchange_boundaries(my_up, buff_up, my_down, buff_down, my_left, buff_left, my_right, buff_right, N,  pgrid);
   for( ii = i_start; ii <= i_end; ++ii){
     y= 1 -N*pgrid.my_row*h   -ii*h;

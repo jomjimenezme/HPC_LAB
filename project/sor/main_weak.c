@@ -35,14 +35,13 @@ int main(int argc, char** argv){
   Setup_grid(&pgrid);
   MPI_Comm_size(pgrid.row_comm, &ncols);
   MPI_Comm_size(pgrid.col_comm, &nrows);
-
+n=64;
+ for( j=1; j<=5; j++){//loop for average in scaling tudy
   //--------------------------- Initialize grid-related  values
-  Read_N(&n, my_rank, p);  //n^2 Global Internal Points 
-  N=(2+n)/nrows;           // Size of local matrix NxN  
-  h = 1.0/(n+1.0);
+  N=(n)/nrows;           // Size of local matrix NxN  
+  h = 1.0/(n-1.0);
   local_A= malloc( N*N *sizeof( double ) );
-  w= 1.0- 4.0*M_PI/(n+1.0);
- for( j=1; j<=10; j++){//loop for average in scaling tudy
+  w= 1.0- 4.0*M_PI/(n-1.0);
     memset( local_A, 0.0, N*N * sizeof(double) );  
     boundary_conditions(local_A, N, h, pgrid);
   
@@ -69,7 +68,8 @@ int main(int argc, char** argv){
     }
     MPI_Barrier(MPI_COMM_WORLD);
     finish = MPI_Wtime();
-    if(my_rank==0){    printf("%d %lf %.16lf \n", p, finish-start, gmax);  }
+    if(my_rank==0){    printf("%d %lf %.16lf \n", n, finish-start, gmax);  }
+  n=n*2;
   }
 
  //parallel_print("matrix.d", N, N, local_A, ncols, pgrid);
